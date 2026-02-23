@@ -58,6 +58,7 @@ export interface AnalysisReport {
   summary: ReportSummary;
   strategy?: ReportStrategy;
   details?: ReportDetails;
+  dashboardMarkdown?: string;
 }
 
 // ============ 分析结果类型 ============

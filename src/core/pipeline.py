@@ -295,6 +295,14 @@ class StockAnalysisPipeline:
                 result.current_price = realtime_data.get('price')
                 result.change_pct = realtime_data.get('change_pct')
 
+            # Step 7.6: generate full Markdown report (same as notification channels)
+            dashboard_markdown = None
+            if result:
+                try:
+                    dashboard_markdown = self.notifier.generate_dashboard_report([result])
+                except Exception as e:
+                    logger.warning(f"[{code}] generate dashboard markdown failed: {e}")
+
             # Step 8: 保存分析历史记录
             if result:
                 try:
@@ -310,7 +318,8 @@ class StockAnalysisPipeline:
                         report_type=report_type.value,
                         news_content=news_context,
                         context_snapshot=context_snapshot,
-                        save_snapshot=self.save_context_snapshot
+                        save_snapshot=self.save_context_snapshot,
+                        dashboard_markdown=dashboard_markdown
                     )
                 except Exception as e:
                     logger.warning(f"[{code}] 保存分析历史失败: {e}")

@@ -205,6 +205,9 @@ class AnalysisHistory(Base):
     news_content = Column(Text)
     context_snapshot = Column(Text)
 
+    # 完整 Markdown 格式报告（与通知渠道推送的内容一致）
+    dashboard_markdown = Column(Text)
+
     # 狙击点位（用于回测）
     ideal_buy = Column(Float)
     secondary_buy = Column(Float)
@@ -232,6 +235,7 @@ class AnalysisHistory(Base):
             'raw_result': self.raw_result,
             'news_content': self.news_content,
             'context_snapshot': self.context_snapshot,
+            'dashboard_markdown': self.dashboard_markdown,
             'ideal_buy': self.ideal_buy,
             'secondary_buy': self.secondary_buy,
             'stop_loss': self.stop_loss,
@@ -414,12 +418,33 @@ class DatabaseManager:
         # 创建所有表
         Base.metadata.create_all(self._engine)
 
+        # 迁移：为已有数据库添加新列
+        self._migrate_add_columns()
+
         self._initialized = True
         logger.info(f"数据库初始化完成: {db_url}")
 
         # 注册退出钩子，确保程序退出时关闭数据库连接
         atexit.register(DatabaseManager._cleanup_engine, self._engine)
-    
+
+    def _migrate_add_columns(self):
+        """Add new columns to existing tables (SQLite safe)."""
+        from sqlalchemy import inspect as sa_inspect, text
+        try:
+            inspector = sa_inspect(self._engine)
+            if not inspector.has_table('analysis_history'):
+                return
+            columns = [col['name'] for col in inspector.get_columns('analysis_history')]
+            if 'dashboard_markdown' not in columns:
+                with self._engine.connect() as conn:
+                    conn.execute(text(
+                        "ALTER TABLE analysis_history ADD COLUMN dashboard_markdown TEXT"
+                    ))
+                    conn.commit()
+                logger.info("Migration: added dashboard_markdown column to analysis_history")
+        except Exception as e:
+            logger.warning(f"Migration check failed (non-fatal): {e}")
+
     @classmethod
     def get_instance(cls) -> 'DatabaseManager':
         """获取单例实例"""
@@ -709,7 +734,8 @@ class DatabaseManager:
         report_type: str,
         news_content: Optional[str],
         context_snapshot: Optional[Dict[str, Any]] = None,
-        save_snapshot: bool = True
+        save_snapshot: bool = True,
+        dashboard_markdown: Optional[str] = None
     ) -> int:
         """
         保存分析结果历史记录
@@ -735,6 +761,7 @@ class DatabaseManager:
             raw_result=self._safe_json_dumps(raw_result),
             news_content=news_content,
             context_snapshot=context_text,
+            dashboard_markdown=dashboard_markdown,
             ideal_buy=sniper_points.get("ideal_buy"),
             secondary_buy=sniper_points.get("secondary_buy"),
             stop_loss=sniper_points.get("stop_loss"),

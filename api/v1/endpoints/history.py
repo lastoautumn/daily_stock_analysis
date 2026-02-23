@@ -211,7 +211,8 @@ def get_history_detail(
             meta=meta,
             summary=summary,
             strategy=strategy,
-            details=details
+            details=details,
+            dashboard_markdown=result.get("dashboard_markdown")
         )
         
     except HTTPException:

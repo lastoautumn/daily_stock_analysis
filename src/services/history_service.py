@@ -163,6 +163,7 @@ class HistoryService:
                 "news_content": record.news_content,
                 "raw_result": raw_result,
                 "context_snapshot": context_snapshot,
+                "dashboard_markdown": record.dashboard_markdown,
             }
             
         except Exception as e:

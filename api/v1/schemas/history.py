@@ -146,6 +146,7 @@ class AnalysisReport(BaseModel):
     summary: ReportSummary = Field(..., description="概览区")
     strategy: Optional[ReportStrategy] = Field(None, description="策略点位区")
     details: Optional[ReportDetails] = Field(None, description="详情区")
+    dashboard_markdown: Optional[str] = Field(None, description="完整 Markdown 格式报告")
     
     class Config:
         json_schema_extra = {
